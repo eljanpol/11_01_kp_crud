@@ -39,6 +39,7 @@ class Product(Table):
     category = ForeignKeyField(Category)
     description = CharField()
     storage_cell = CharField()
+    date_added = DateTimeField()
 
 
 def main():
@@ -59,7 +60,8 @@ def main():
         name="qwerty",
         category=1,
         description="sadf",
-        storage_cell="a1"
+        storage_cell="a1",
+        date_added="2026-05-05 10:20:53"
     )
 
 
