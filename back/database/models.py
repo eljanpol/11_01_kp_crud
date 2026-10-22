@@ -1,4 +1,5 @@
 from peewee import Model, CharField, SqliteDatabase, AutoField, ForeignKeyField, IntegerField, DateTimeField, PostgresqlDatabase
+from back.rest_api.hasher import hash_password
 
 
 db = PostgresqlDatabase(
@@ -49,7 +50,7 @@ def main():
     User.get_or_create(
         name="1",
         role=1,
-        password="qwerty"
+        password=hash_password("qwert")
     )
     Category.get_or_create(
         name="1",
