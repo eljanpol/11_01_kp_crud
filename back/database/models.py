@@ -1,5 +1,9 @@
 from peewee import Model, CharField, SqliteDatabase, AutoField, ForeignKeyField, IntegerField, DateTimeField, PostgresqlDatabase
+from back.database.schemas import ProductSchema
 from back.rest_api.hasher import hash_password
+from back.rest_api.routers import product
+from playhouse.shortcuts import model_to_dict
+from back.database.schemas import *
 
 
 db = PostgresqlDatabase(
@@ -26,7 +30,6 @@ class Role(Table):
 class Category(Table):
     name = CharField()
     description = CharField()
-    storage_section = CharField()
 
 
 class User(Table):
@@ -35,12 +38,64 @@ class User(Table):
     password = CharField()
 
 
+class Warehouse(Table):
+    name = CharField()
+    adress = CharField()
+    responsible_user = ForeignKeyField(User)
+
+
+class Suppliers(Table):
+    name = CharField()
+    phone = CharField()
+    email = CharField()
+    inn = CharField()
+
+
+class StorageSell(Table):
+    name = CharField()
+
+
 class Product(Table):
     name = CharField()
     category = ForeignKeyField(Category)
     description = CharField()
-    storage_cell = CharField()
+    storage_cell = ForeignKeyField(StorageSell)
     date_added = DateTimeField()
+
+    def get_product_list(self):
+        return [model_to_dict(i) for i in Product.select()]
+
+    def get_product_by_id(self, id: str):
+        return model_to_dict(Product.get_or_none(id=id))
+
+    def create_product(self, product: CreateProductSchema):
+        product = Product.get_or_create(
+            name=product.name,
+            category=product.category,
+            description=product.description,
+            storage_cell=product.storage_cell,
+            date_added=product.date_added
+        )
+
+        return model_to_dict(product)
+
+    def change_product_cell(self, id: int, new_cell: str):
+        product = Product.get_or_none(id=id)
+
+        if not product:
+            raise 
+
+        product.storage_cell = new_cell
+        product.save()
+
+        return model_to_dict(product)
+
+
+class ProductTransportation(Table):
+    product = ForeignKeyField(Product)
+    from_adress = CharField()
+    to_adress = CharField()
+    sending_date = DateTimeField()
 
 
 def main():
@@ -54,8 +109,7 @@ def main():
     )
     Category.get_or_create(
         name="1",
-        description="qwerty",
-        storage_section="a1"
+        description="qwerty"
     )
     Product.get_or_create(
         name="qwerty",

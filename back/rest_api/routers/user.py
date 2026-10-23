@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import date
 
-from back.database.models import User, UserSubjects, Subject
+from back.database.models import User
 from back.rest_api.hasher import verify_hash, hash_password
 from back.rest_api.jwt_token import get_jwt, get_user, key, auf_token
 
@@ -16,12 +16,6 @@ router = APIRouter(prefix="/users", tags=["users"])
 class UserRegister(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=6)
-
-
-class UserGradeCreate(BaseModel):
-    subject_id: int
-    grade: int = Field(..., ge=1, le=100)
-    created_at: str
 
 
 class UserRoleUpdate(BaseModel):
