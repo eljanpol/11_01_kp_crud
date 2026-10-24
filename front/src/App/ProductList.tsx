@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react"
 import { Link } from "react-router-dom"
-import { ArrowLeft, MapPin, PackageOpen } from "lucide-react"
+import { ArrowLeft, ArrowRight, MapPin, PackageOpen } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -174,6 +174,12 @@ export default function ProductList() {
                       Ячейка {product.cell}
                     </span>
                     <span>Добавлен: {formatDate(product.createdAt)}</span>
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link to="/providers">
+                        О поставщике
+                        <ArrowRight className="size-4" />
+                      </Link>
+                    </Button>
                   </CardContent>
                 </Card>
               </li>
