@@ -1,73 +1,54 @@
+from back.rest_api.jwt_token import encode_jwt
 from fastapi import APIRouter, HTTPException, Body, Depends
-from playhouse.shortcuts import model_to_dict
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from pydantic import BaseModel, Field
-from typing import Optional
 from datetime import date
 
-from back.database.models import User
-from back.rest_api.hasher import verify_hash, hash_password
-from back.rest_api.jwt_token import get_jwt, get_user, key, auf_token
+from back.database.schemas import UserRegister, UserResponse, UserRoleUpdate
+from back.database.models import User, Role
+from back.rest_api.dependencies import get_current_user
 
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-class UserRegister(BaseModel):
-    username: str = Field(..., min_length=3, max_length=50)
-    password: str = Field(..., min_length=6)
+@router.post("", response_model=UserResponse)
+def register(user_data: UserRegister):
+    return User.create_user(user_data)
 
 
-class UserRoleUpdate(BaseModel):
-    role_id: int
+@router.get("/me", response_model=UserResponse)
+def get_me(current_user=Depends(get_current_user)):
+    return current_user 
 
 
-@router.post("")
-async def register(user_data: UserRegister):
-    if user_data.username in [model_to_dict(i)["name"] for i in User.select()]:
-        raise HTTPException(400, "User already registered")
+@router.get("", response_model=list[UserResponse])
+def get_users(current_user=Depends(get_current_user)):
+    if current_user.role.name == "admin":
+        return list(User.select())
 
-    user, _ = User.get_or_create(
-        name=user_data.username,
-        password=hash_password(user_data.password),
-        role=2
-    )
-
-    return bool(user)
+    raise HTTPException(403, "User must be a admin")
 
 
-@router.get("/me")
-async def get_me(current_user=Depends(auf_token)):
-    return get_user(current_user, key)
+@router.patch("/{user_id}", response_model=UserResponse)
+def change_role(
+    user_id: int,
+    data: UserRoleUpdate,
+    current_user=Depends(get_current_user)
+    ):
 
+    if not current_user.is_admin():
+        raise HTTPException(403, "Admin only")
 
-@router.get("")
-async def get_users(current_user=Depends(auf_token)):
-    user = get_user(current_user, key)
+    role = Role.get_or_none(Role.id == data.role_id)
 
-    if user.role.name in ["admin", "teacher"]:
-        return [model_to_dict(i) for i in User.select()]
+    if not role:
+        raise HTTPException(400, "Role not found")
 
-    raise HTTPException(400, "Incorrect User role. User must be a Admin")
-
-
-@router.patch("/{user_id}")
-async def change_role(
-    user_id: int, 
-    role_data: UserRoleUpdate,
-    current_user=Depends(auf_token)
-):
-    current_user = get_user(current_user, key)
-
-    if current_user.role.name != "admin":
-        raise HTTPException(400, "Incorrect User role. User must be a Admin")
-
-    user = User.get_or_none(id=user_id)
+    user = User.get_or_none(User.id == user_id)
 
     if not user:
         raise HTTPException(404, "User not found")
 
-    user.role = role_data.role_id
+    user.role = role
     user.save()
 
-    return model_to_dict(user)
+    return user

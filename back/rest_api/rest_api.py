@@ -1,14 +1,17 @@
+from back.servises.auth_servise import authentificate
 from fastapi import FastAPI, HTTPException, Body, Depends
 import fastapi
 from uvicorn import run
 from fastapi.security import OAuth2PasswordRequestForm
 from playhouse.shortcuts import model_to_dict
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
-from back.rest_api.jwt_token import get_jwt, get_user, key
-from back.rest_api.hasher import verify_hash
+from back.rest_api.routers import product, user
+from back.core.exceptions import InvalidCredentials, NotFoundError, AlreadyExsist, InvalidRole
 from back.database.models import User
-from back.rest_api.routers import user
+from back.rest_api.jwt_token import encode_jwt, key
+from back.rest_api.hasher import hash_password, verify_hash
 
 
 app = FastAPI()
@@ -20,22 +23,32 @@ app.add_middleware(
     allow_headers=["*"])
 
 
+@app.exception_handler(AlreadyExsist)
+async def _(request, exc):
+    return JSONResponse(status_code=409, content={"detail": exc.message})
+
+
+@app.exception_handler(NotFoundError)
+async def _(request, exc):
+    return JSONResponse(status_code=404, content={"detail": exc.message})
+
+
+@app.exception_handler(InvalidRole)
+async def _(request, exc):
+    return JSONResponse(status_code=403, content={"detail": exc.message})
+
+
+@app.exception_handler(InvalidCredentials)
+async def _(request, exc):
+    return JSONResponse(status_code=401, content={"detail": exc.message})
+
+
 @app.post("/token")
-async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = User.get_or_none(name=form_data.username)
-
-    if not user:
-        raise HTTPException(status_code=400, detail="invalid name")
-
-    user = model_to_dict(user)
-    print(user)
-
-    if verify_hash(form_data.password, user["password"]):
-        return {"access_token": get_jwt(user, key)}
-
-    raise HTTPException(status_code=400, detail="invalid password")
+def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    return authentificate(username=form_data.username, password=form_data.password)
 
 
+app.include_router(product.router)
 app.include_router(user.router)
 
 

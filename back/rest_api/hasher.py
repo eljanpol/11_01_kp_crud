@@ -2,7 +2,7 @@ import bcrypt
 
 
 def hash_password(password: str):
-    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_hash(password: str, hashed: str):

@@ -1,9 +1,10 @@
 from peewee import Model, CharField, SqliteDatabase, AutoField, ForeignKeyField, IntegerField, DateTimeField, PostgresqlDatabase
-from back.database.schemas import ProductSchema
-from back.rest_api.hasher import hash_password
-from back.rest_api.routers import product
 from playhouse.shortcuts import model_to_dict
+
+from back.rest_api.hasher import verify_hash, hash_password
+from back.rest_api.jwt_token import decode_jwt
 from back.database.schemas import *
+from back.core.exceptions import InvalidRole, NotFoundError, AlreadyExsist
 
 
 db = PostgresqlDatabase(
@@ -31,11 +32,36 @@ class Category(Table):
     name = CharField()
     description = CharField()
 
+    @classmethod
+    def create_category(cls, data: CategoryCreate):
+        cls.get_or_create(
+            name=data.name,
+            description=data.description
+        )
+
 
 class User(Table):
-    name = CharField()
+    name = CharField(unique=True)
     role = ForeignKeyField(Role)
     password = CharField()
+
+    @classmethod
+    def create_user(cls, user_data: UserRegister):
+        if user_data.username in [model_to_dict(i)["name"] for i in User.select()]:
+            raise AlreadyExsist("User already registered")
+
+        role = Role.get_or_none(name="user")
+
+        user, _ = cls.get_or_create(
+            name=user_data.username,
+            password=hash_password(user_data.password),
+            role=role
+        )
+
+        return user
+
+    def is_admin(self):
+        return self.role.name == "admin"
 
 
 class Warehouse(Table):
@@ -54,6 +80,12 @@ class Suppliers(Table):
 class StorageSell(Table):
     name = CharField()
 
+    @classmethod
+    def add_storage_sell(cls, sell: StorageSellCreate):
+        cls.get_or_create(
+            name=sell.name
+        )
+
 
 class Product(Table):
     name = CharField()
@@ -62,14 +94,13 @@ class Product(Table):
     storage_cell = ForeignKeyField(StorageSell)
     date_added = DateTimeField()
 
-    def get_product_list(self):
-        return [model_to_dict(i) for i in Product.select()]
+    @classmethod
+    def get_product_by_id(cls, id: int):
+        return cls.get_or_none(id=id)
 
-    def get_product_by_id(self, id: str):
-        return model_to_dict(Product.get_or_none(id=id))
-
-    def create_product(self, product: CreateProductSchema):
-        product = Product.get_or_create(
+    @classmethod
+    def create_product(cls, product: CreateProductSchema):
+        product = cls.get_or_create(
             name=product.name,
             category=product.category,
             description=product.description,
@@ -77,18 +108,19 @@ class Product(Table):
             date_added=product.date_added
         )
 
-        return model_to_dict(product)
+        return product
 
-    def change_product_cell(self, id: int, new_cell: str):
-        product = Product.get_or_none(id=id)
+    @classmethod
+    def change_product_cell(cls, id: int, new_cell: str):
+        product = cls.get_or_none(id=id)
 
         if not product:
-            raise 
+            raise NotFoundError(f"product {id} not found")
 
         product.storage_cell = new_cell
         product.save()
 
-        return model_to_dict(product)
+        return product
 
 
 class ProductTransportation(Table):
@@ -99,24 +131,13 @@ class ProductTransportation(Table):
 
 
 def main():
-    Role.get_or_create(
-        name="1"
-    )
-    User.get_or_create(
-        name="1",
-        role=1,
-        password=hash_password("qwert")
-    )
-    Category.get_or_create(
-        name="1",
-        description="qwerty"
-    )
-    Product.get_or_create(
-        name="qwerty",
-        category=1,
-        description="sadf",
-        storage_cell="a1",
-        date_added="2026-05-05 10:20:53"
+    for name in ("user", "teacher", "admin"):
+        Role.get_or_create(name=name)
+
+    user, _ = User.get_or_create(
+        name="admin",
+        role=Role.get_or_none(name="admin"),
+        password=hash_password("qwerty123")
     )
 
 
@@ -125,6 +146,10 @@ if __name__ == "__main__":
         Role,
         User,
         Category,
-        Product
+        Product,
+        StorageSell,
+        ProductTransportation,
+        Suppliers,
+        Warehouse        
     ])
     main()
