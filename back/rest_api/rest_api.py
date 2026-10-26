@@ -1,4 +1,5 @@
 from back.servises.auth_servise import authentificate
+from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException, Body, Depends
 import fastapi
 from uvicorn import run
@@ -43,9 +44,13 @@ async def _(request, exc):
     return JSONResponse(status_code=401, content={"detail": exc.message})
 
 
-@app.post("/token")
-def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    return authentificate(username=form_data.username, password=form_data.password)
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+@app.post("/login")
+def login(data: LoginRequest = Body()):
+    return authentificate(data.username, data.password)
 
 
 app.include_router(product.router)
