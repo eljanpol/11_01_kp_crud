@@ -53,7 +53,15 @@ def login(
     response: Response,
     data: LoginRequest = Body()
 ):
-    return authentificate(data.username, data.password)
+    token = authentificate(data.username, data.password)
+
+    response.set_cookie(
+        key="token",
+        value=token,
+        httponly=True,
+        samesite="lax"
+    )
+    return JSONResponse(content = token)
 
 
 app.include_router(product.router)
