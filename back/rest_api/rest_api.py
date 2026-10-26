@@ -1,6 +1,6 @@
 from back.servises.auth_servise import authentificate
 from pydantic import BaseModel
-from fastapi import FastAPI, HTTPException, Body, Depends
+from fastapi import FastAPI, HTTPException, Body, Depends, Response
 import fastapi
 from uvicorn import run
 from fastapi.security import OAuth2PasswordRequestForm
@@ -49,7 +49,10 @@ class LoginRequest(BaseModel):
     password: str
 
 @app.post("/login")
-def login(data: LoginRequest = Body()):
+def login(
+    response: Response,
+    data: LoginRequest = Body()
+):
     return authentificate(data.username, data.password)
 
 
