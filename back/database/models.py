@@ -141,7 +141,7 @@ class ProductTransportation(Table):
 
 
 def main():
-    for name in ("user", "teacher", "admin"):
+    for name in ("user", "manager", "admin"):
         Role.get_or_create(name=name)
 
     user, _ = User.get_or_create(
