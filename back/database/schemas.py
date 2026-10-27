@@ -1,3 +1,5 @@
+from _typeshed import structseq
+
 from pydantic import BaseModel, Field, ConfigDict
 
 
@@ -30,5 +32,16 @@ class StorageSellCreate(BaseModel):
 
 
 class CategoryCreate(BaseModel):
+    name: str
+    description: str
+
+
+class CategoryGet(BaseModel):
+    id: int
+
+
+class CategoryResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
     name: str
     description: str
