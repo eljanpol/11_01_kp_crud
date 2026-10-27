@@ -79,7 +79,7 @@ export default function AddProductPage() {
       ...form,
       name: form.name.trim(),
       description: form.description.trim(),
-      cell: form.cell.trim(),
+      storage_cell: form.cell.trim(),
     })
 
     setForm(emptyForm)
