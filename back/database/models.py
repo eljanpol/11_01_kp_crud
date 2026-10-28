@@ -34,10 +34,20 @@ class Category(Table):
 
     @classmethod
     def create_category(cls, data: CategoryCreate):
-        cls.get_or_create(
+        category = cls.get_or_create(
             name=data.name,
             description=data.description
         )
+
+        return category
+
+    @classmethod
+    def get_category(cls, data: CategoryGet):
+        return cls.get_or_none(id=data.id)
+
+    @classmethod
+    def get_category_list(cls):
+        return cls.select()
 
 
 class User(Table):

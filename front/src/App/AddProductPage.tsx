@@ -21,15 +21,11 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 
-// Список категорий. Поменяй на свои.
-const categories = [
-  "Электроника",
-  "Одежда",
-  "Продукты",
-  "Инструменты",
-  "Канцелярия",
-  "Другое",
-]
+type Category = {
+  id: number
+  name: string
+  description: string
+}
 
 type ProductForm = {
   name: string
@@ -50,8 +46,27 @@ const emptyForm: ProductForm = {
 export default function AddProductPage() {
   const [form, setForm] = useState<ProductForm>(emptyForm)
   const [errors, setErrors] = useState<FormErrors>({})
+  const [allCategories, setAllCategories] = useState<Category[]>([])
 
-  // Обновляет одно поле формы и убирает ошибку этого поля
+  async function getCategories() {
+    try{
+      const response = await fetch("http://localhost:8000/category")
+
+      if(!response.ok){
+        throw new Error("Ошибка сервера: " + response.status)
+      }
+      const data = await response.json()
+      setAllCategories(data)
+    }
+    catch(err){
+      console.log(err)
+    }
+  }
+
+  getCategories()
+
+  const categories = allCategories.map((category) => category.name)
+
   const update = (field: keyof ProductForm, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }))
     setErrors((prev) => ({ ...prev, [field]: undefined }))
@@ -65,7 +80,7 @@ export default function AddProductPage() {
     return result
   }
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
     const validationErrors = validate()
@@ -74,15 +89,32 @@ export default function AddProductPage() {
       return
     }
 
-    // TODO: отправить товар на сервер или сохранить в хранилище
-    console.log("Новый товар:", {
-      ...form,
-      name: form.name.trim(),
-      description: form.description.trim(),
-      storage_cell: form.cell.trim(),
-    })
+    const id = allCategories.find((category) => category.name === form.category)?.id
 
-    setForm(emptyForm)
+    try{
+      const response = await fetch("http://localhost:8000/products/", {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          description: form.description.trim(),
+          category: id,
+          storage_cell: form.cell.trim(),
+          date_added: new Date().toISOString()
+        }),
+      })
+
+      if (!response.ok){
+        throw new Error("Ошибка сервера: " + response.status)
+      }
+      setForm(emptyForm)
+    }
+
+    catch(err){
+      console.error(err)
+    }
   }
 
   return (
@@ -112,6 +144,7 @@ export default function AddProductPage() {
                   placeholder="Например, Ноутбук Lenovo"
                   value={form.name}
                   onChange={(e) => update("name", e.target.value)}
+        
                   aria-invalid={!!errors.name}
                 />
                 {errors.name && (

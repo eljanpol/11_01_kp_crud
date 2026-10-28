@@ -1,6 +1,5 @@
 from back.servises.auth_servise import authentificate
-from pydantic import BaseModel
-from fastapi import FastAPI, HTTPException, Body, Depends, Response
+from fastapi import FastAPI, HTTPException, Body, Depends
 import fastapi
 from uvicorn import run
 from fastapi.security import OAuth2PasswordRequestForm
@@ -8,7 +7,7 @@ from playhouse.shortcuts import model_to_dict
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from back.rest_api.routers import product, user
+from back.rest_api.routers import product, user, category
 from back.core.exceptions import InvalidCredentials, NotFoundError, AlreadyExsist, InvalidRole
 from back.database.models import User
 from back.rest_api.jwt_token import encode_jwt, key
@@ -44,28 +43,14 @@ async def _(request, exc):
     return JSONResponse(status_code=401, content={"detail": exc.message})
 
 
-class LoginRequest(BaseModel):
-    username: str
-    password: str
-
-@app.post("/login")
-def login(
-    response: Response,
-    data: LoginRequest = Body()
-):
-    token = authentificate(data.username, data.password)
-
-    response.set_cookie(
-        key="token",
-        value=token,
-        httponly=True,
-        samesite="lax"
-    )
-    return JSONResponse(content = token)
+@app.post("/token")
+def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    return authentificate(username=form_data.username, password=form_data.password)
 
 
 app.include_router(product.router)
 app.include_router(user.router)
+app.include_router(category.router)
 
 
 if __name__ == "__main__":

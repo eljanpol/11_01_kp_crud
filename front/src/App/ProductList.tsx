@@ -26,11 +26,9 @@ type Product = {
   description: string
   category: string
   storage_cell: string
-  date_added: string // дата добавления в формате ISO
+  date_added: string
 }
 
-// Значение «Все категории» в выпадающем списке.
-// Пустую строку Select использовать не позволяет, поэтому берём "all".
 const ALL = "all"
 
 const formatDate = (iso: string) =>
@@ -67,9 +65,9 @@ export default function ProductList() {
   }, [])
 
   const categories = [...new Set(products.map((product) => product.category))]
+  
   const [category, setCategory] = useState<string>(ALL)
 
-  // Фильтрация по категории + сортировка: новые товары сверху
   const visibleProducts = useMemo(() => {
     const filtered =
       category === ALL
