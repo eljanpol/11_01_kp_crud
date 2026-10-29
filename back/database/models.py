@@ -1,9 +1,10 @@
 from peewee import Model, CharField, SqliteDatabase, AutoField, ForeignKeyField, IntegerField, DateTimeField, PostgresqlDatabase
 from playhouse.shortcuts import model_to_dict
+import datetime
 
 from back.rest_api.hasher import verify_hash, hash_password
 from back.rest_api.jwt_token import decode_jwt
-from back.database.schemas import *
+from back.database.schemas import (UserRegister, UserRoleUpdate, CreateProductSchema, StorageCellCreate, CategoryCreate, CategoryGet, StorageCellGet)
 from back.core.exceptions import InvalidRole, NotFoundError, AlreadyExsist
 
 
@@ -43,7 +44,12 @@ class Category(Table):
 
     @classmethod
     def get_category(cls, data: CategoryGet):
-        return cls.get_or_none(id=data.id)
+        category = cls.get_or_none(id=data.id)
+
+        if not category:
+            raise NotFoundError(f"category {data.id} not found")
+
+        return category
 
     @classmethod
     def get_category_list(cls):
@@ -62,11 +68,27 @@ class User(Table):
 
         role = Role.get_or_none(name="user")
 
+        if not role:
+            raise NotFoundError(f"role 'user' not found")
+
         user, _ = cls.get_or_create(
             name=user_data.username,
             password=hash_password(user_data.password),
             role=role
         )
+
+        return user
+
+    @classmethod
+    def change_role(cls, data: UserRoleUpdate):
+        role = Role.get_or_none(id=data.role_name)
+        user = cls.get_or_none(id=data.username)
+
+        if not role or not user:
+            raise NotFoundError("User of Role not found")
+
+        user.role = role
+        user.save()
 
         return user
 
@@ -87,35 +109,61 @@ class Suppliers(Table):
     inn = CharField()
 
 
-class StorageSell(Table):
+class StorageCell(Table):
     name = CharField()
 
     @classmethod
-    def add_storage_sell(cls, sell: StorageSellCreate):
-        cls.get_or_create(
+    def add_storage_sell(cls, sell: StorageCellCreate):
+        cell = cls.get_or_create(
             name=sell.name
         )
+
+        return cell
+
+    @classmethod
+    def get_cells_list(cls):
+        return cls.select()
+
+    @classmethod
+    def get_cell(cls, cell: StorageCellGet):
+        cell = cls.get_or_none(name=cell.name)
+
+        if not cell:
+            raise NotFoundError(f"storage cell {cell.name} not found")
+
+        return cell
 
 
 class Product(Table):
     name = CharField()
     category = ForeignKeyField(Category)
     description = CharField()
-    storage_cell = ForeignKeyField(StorageSell)
+    storage_cell = ForeignKeyField(StorageCell)
     date_added = DateTimeField()
 
     @classmethod
     def get_product_by_id(cls, id: int):
-        return cls.get_or_none(id=id)
+        product = cls.get_or_none(id=id)
+
+        if not product:
+            raise NotFoundError(f"product {id} not found")
+
+        return product
 
     @classmethod
     def create_product(cls, product: CreateProductSchema):
+        category = Category.get_or_none(name=product.category)
+        cell = StorageCell.get_or_none(name=product.storage_cell)
+        
+        if not category or not cell:
+            raise NotFoundError(f"category or cell not found")
+
         product = cls.get_or_create(
             name=product.name,
-            category=product.category,
+            category=category,
             description=product.description,
-            storage_cell=product.storage_cell,
-            date_added=product.date_added
+            storage_cell=cell,
+            date_added=datetime.datetime.now
         )
 
         return product
@@ -157,7 +205,7 @@ if __name__ == "__main__":
         User,
         Category,
         Product,
-        StorageSell,
+        StorageCell,
         ProductTransportation,
         Suppliers,
         Warehouse        

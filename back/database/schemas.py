@@ -1,14 +1,11 @@
-from _typeshed import structseq
-
 from pydantic import BaseModel, Field, ConfigDict
 
 
 class CreateProductSchema(BaseModel):
     name: str
-    category: int
+    category: str
     description: str
-    storage_cell: int
-    date_added: str
+    storage_cell: str
 
 
 class UserRegister(BaseModel):
@@ -16,8 +13,14 @@ class UserRegister(BaseModel):
     password: str = Field(..., min_length=6)
 
 
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+
 class UserRoleUpdate(BaseModel):
-    role_id: int
+    username: str
+    role_name: str
 
 
 class UserResponse(BaseModel):
@@ -27,7 +30,16 @@ class UserResponse(BaseModel):
     role_id: int
 
 
-class StorageSellCreate(BaseModel):
+class StorageCellCreate(BaseModel):
+    name: str
+
+
+class StorageCellGet(BaseModel):
+    name: str
+
+
+class StorageCellResponse(BaseModel):
+    id: int
     name: str
 
 

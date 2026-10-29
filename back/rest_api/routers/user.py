@@ -30,25 +30,11 @@ def get_users(current_user=Depends(get_current_user)):
 
 @router.patch("/{user_id}", response_model=UserResponse)
 def change_role(
-    user_id: int,
     data: UserRoleUpdate,
     current_user=Depends(get_current_user)
     ):
+    
+    if current_user.role.name == "admin":
+        User.change_role(data)
 
-    if not current_user.is_admin():
-        raise HTTPException(403, "Admin only")
-
-    role = Role.get_or_none(Role.id == data.role_id)
-
-    if not role:
-        raise HTTPException(400, "Role not found")
-
-    user = User.get_or_none(User.id == user_id)
-
-    if not user:
-        raise HTTPException(404, "User not found")
-
-    user.role = role
-    user.save()
-
-    return user
+    raise HTTPException(403, "User must be a admin")

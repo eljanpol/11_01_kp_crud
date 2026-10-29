@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Body, Depends
+from fastapi import APIRouter, HTTPException, Body, Depends, Path, Query
 from typing import Optional
 from datetime import date
 from playhouse.shortcuts import model_to_dict
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/products", tags=["products"])
 
 @router.get("/")
 def get_products_list(current_user=Depends(get_current_user)):
-	return [model_to_dict(i) for i Product.select()]
+	return [model_to_dict(i) for i in Product.select()]
 
 
 @router.get("/{id}")
@@ -28,5 +28,5 @@ def create_product(product: CreateProductSchema, current_user=Depends(get_curren
 
 
 @router.patch("/{id}")
-def change_product_cell(id: int, new_cell: str, current_user=Depends(get_current_user)):
+def change_product_cell(id: int = Path(), new_cell: str = Query(), current_user=Depends(get_current_user)):
 	return model_to_dict(Product.change_product_cell(id, new_cell))
