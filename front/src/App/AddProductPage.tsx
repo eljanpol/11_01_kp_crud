@@ -89,8 +89,6 @@ export default function AddProductPage() {
       return
     }
 
-    const id = allCategories.find((category) => category.name === form.category)?.id
-
     try{
       const response = await fetch("http://localhost:8000/products/", {
         method: "POST",
@@ -100,9 +98,8 @@ export default function AddProductPage() {
         body: JSON.stringify({
           name: form.name.trim(),
           description: form.description.trim(),
-          category: id,
-          storage_cell: form.cell.trim(),
-          date_added: new Date().toISOString()
+          category: form.category,
+          storage_cell: form.cell.trim()
         }),
       })
 
