@@ -8,6 +8,7 @@ import {
   PackageMinus,
   PackagePlus,
   User,
+  SquareChartGantt,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -48,6 +49,15 @@ const sections = [
   },
 ]
 
+const adminSections = [
+    {
+        to: "/categories",
+        title: "Управление категориями",
+        description: "Все существующие категории, удаление и добавление новых.",
+        icon: SquareChartGantt,
+    },
+]
+
 type HomeProps = {
   /** Логин текущего пользователя */
   username?: string
@@ -55,9 +65,10 @@ type HomeProps = {
   onLogout?: () => void
 }
 
-export default function HomePage({ username = "user", onLogout }: HomeProps) {
+export default function HomePage({ username, onLogout }: HomeProps) {
     const navigate = useNavigate()
     username = "Janpol"
+    const userRole = "admin"
   // Меню открывается при наведении на логин (и по клику — для тачскринов и клавиатуры)
     const [menuOpen, setMenuOpen] = useState(false)
     const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
@@ -161,6 +172,36 @@ export default function HomePage({ username = "user", onLogout }: HomeProps) {
                 </Link>
             ))}
             </div>
+
+            {userRole === "admin" && (
+                <>
+                    <div className="max-w-xl, py-10">
+                    <h3 className="text-3xl font-semibold tracking-tight">
+                        Управление складом
+                    </h3>
+                    <p className="mt-2 text-muted-foreground">
+                        Доступно только администрации.
+                    </p>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {adminSections.map(({ to, title, description, icon: Icon }) => (
+                        <Link
+                        key={to}
+                        to={to}
+                        className="rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                        <Card className="h-full transition-colors hover:bg-accent">
+                            <CardHeader>
+                            <Icon className="mb-2 size-6" />
+                            <CardTitle>{title}</CardTitle>
+                            <CardDescription>{description}</CardDescription>
+                            </CardHeader>
+                        </Card>
+                        </Link>
+                    ))}
+                    </div>
+                </>
+            )}
         </main>
         </div>
     )
