@@ -1,14 +1,15 @@
 import HomePage from "./HomePage";
 import AddProductPage from "./AddProductPage";
 import ProductList from "./ProductList";
+import CategoriesPage from "./CategoriesPage";
 
-import React from "react"
-import { BrowserRouter, Routes, Route, useNavigate, Outlet, Navigate } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 
 export const App = () => {
     return(
         <BrowserRouter>
             <Routes>
+                <Route path="categories" element={<CategoriesPage/>}/>
                 <Route path="home" element={<HomePage/>}/>
                 <Route path="/products/new" element={<AddProductPage/>}/>
                 <Route path="/products" element={<ProductList/>} />
