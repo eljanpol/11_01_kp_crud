@@ -50,7 +50,7 @@ export default function AddProductPage() {
 
   async function getCategories() {
     try{
-      const response = await fetch("http://localhost:8000/category")
+      const response = await fetch("http://localhost:8000/category", { credentials: "include" })
 
       if(!response.ok){
         throw new Error("Ошибка сервера: " + response.status)
@@ -91,6 +91,7 @@ export default function AddProductPage() {
 
     try{
       const response = await fetch("http://localhost:8000/products/", {
+        credentials: "include",
         method: "POST",
         headers: {
         "Content-Type": "application/json",

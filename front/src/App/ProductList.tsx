@@ -47,7 +47,7 @@ export default function ProductList() {
   useEffect(() => {
     async function loadProducts() {
       try {
-        const response = await fetch("http://localhost:8000/products/")
+        const response = await fetch("http://localhost:8000/products/", { credentials: "include" })
 
         if (!response.ok) {
           throw new Error("Ошибка сервера: " + response.status)
@@ -142,7 +142,7 @@ export default function ProductList() {
                     </span>
                     <span>Добавлен: {formatDate(product.date_added)}</span>
                     <Button variant="ghost" size="sm" asChild>
-                      <Link to="/providers">
+                      <Link to="/indevelopment">
                         О поставщике
                         <ArrowRight className="size-4" />
                       </Link>
