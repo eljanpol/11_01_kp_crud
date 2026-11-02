@@ -5,6 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from playhouse.shortcuts import model_to_dict
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from datetime import timedelta, datetime, timezone
 
 from back.servises.auth_servise import authentificate
 from back.database.schemas import UserLogin
@@ -45,17 +46,33 @@ async def _(request, exc):
 
 
 @app.post("/login")
-def login(response: Response, form_data: UserLogin = Body()):
+def login(form_data: UserLogin = Body()):
     token = authentificate(username=form_data.username, password=form_data.password)
 
+    response = JSONResponse(content=token)
     response.set_cookie(
         key="token",
         value=token,
         httponly=True,
-        samesite="lax"
+        samesite="lax",
+        path="/",
+        expires=datetime.now(timezone.utc) + timedelta(days=30)
     )
 
-    return JSONResponse(content=token)
+    return response
+
+
+@app.post("/logout")
+def logout():
+    response = JSONResponse(content={"detail": "Logged out"})
+    response.delete_cookie(
+        key="token",
+        path="/",
+        httponly=True,
+        samesite="lax",
+        secure=False,
+    )
+    return response
 
 
 app.include_router(product.router)
