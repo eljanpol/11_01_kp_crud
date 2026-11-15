@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { ArrowLeft } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -11,6 +12,13 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 
 type Category = {
@@ -19,69 +27,100 @@ type Category = {
   description: string
 }
 
-export default function CategoriesPage() {
-  const [categories, setCategories] = useState<Category[]>([])
-  const [name, setName] = useState("")
-  const [description, setDescription] = useState("")
-  const [error, setError] = useState("")
+type ProductForm = {
+  name: string
+  description: string
+  category: string
+  cell: string
+}
 
-  async function loadCategories() {
-    try {
-      const response = await fetch("http://localhost:8000/category/", {credentials: "include"})
+type FormErrors = Partial<Record<keyof ProductForm, string>>
 
-      if (!response.ok) {
+const emptyForm: ProductForm = {
+  name: "",
+  description: "",
+  category: "",
+  cell: "",
+}
+
+export default function AddProductPage() {
+  const [form, setForm] = useState<ProductForm>(emptyForm)
+  const [errors, setErrors] = useState<FormErrors>({})
+  const [allCategories, setAllCategories] = useState<Category[]>([])
+
+  async function getCategories() {
+    try{
+      const response = await fetch("http://localhost:8000/category", { credentials: "include" })
+
+      if(!response.ok){
         throw new Error("Ошибка сервера: " + response.status)
       }
-
       const data = await response.json()
-      setCategories(data)
-    } catch (err) {
-      console.error(err)
-      setError("Не удалось загрузить категории")
+      setAllCategories(data)
+    }
+    catch(err){
+      console.log(err)
     }
   }
 
+
   useEffect(() => {
-    loadCategories()
+    getCategories()
   }, [])
 
-  const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
+  const categories = allCategories.map((category) => category.name)
+
+  const update = (field: keyof ProductForm, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }))
+    setErrors((prev) => ({ ...prev, [field]: undefined }))
+  }
+
+  const validate = (): FormErrors => {
+    const result: FormErrors = {}
+    if (!form.name.trim()) result.name = "Введите название товара"
+    if (!form.category) result.category = "Выберите категорию"
+    if (!form.cell.trim()) result.cell = "Введите номер ячейки"
+    return result
+  }
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    if (!name.trim()) {
-      setError("Введите название категории")
+    const validationErrors = validate()
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors)
       return
     }
 
-
-    try {
-      const response = await fetch("http://localhost:8000/category/", {
+    try{
+      const response = await fetch("http://localhost:8000/products/", {
         credentials: "include",
         method: "POST",
-        headers: { "Content-Type": "application/json"},
+        headers: {
+        "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          name: name.trim(),
-          description: description.trim(),
+          name: form.name.trim(),
+          description: form.description.trim(),
+          category: form.category,
+          storage_cell: form.cell.trim()
         }),
       })
 
-      if (!response.ok) {
+      if (!response.ok){
         throw new Error("Ошибка сервера: " + response.status)
       }
+      setForm(emptyForm)
+    }
 
-      setName("")
-      setDescription("")
-      setError("")
-      await loadCategories()
-    } catch (err) {
+    catch(err){
       console.error(err)
-      setError("Не удалось создать категорию")
     }
   }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <main className="mx-auto max-w-3xl px-4 py-8">
+      <main className="mx-auto max-w-2xl px-4 py-8">
         <Button variant="ghost" size="sm" className="mb-6 gap-2" asChild>
           <Link to="/home">
             <ArrowLeft className="size-4" />
@@ -89,78 +128,88 @@ export default function CategoriesPage() {
           </Link>
         </Button>
 
-        <h1 className="text-3xl font-semibold tracking-tight">
-          Управление категориями
-        </h1>
-        <p className="mt-2 text-muted-foreground">
-          Создавайте новые категории и удаляйте ненужные.
-        </p>
-
-        {error && <p className="mt-6 text-sm text-destructive">{error}</p>}
-
-        <Card className="mt-6">
+        <Card>
           <CardHeader>
-            <CardTitle>Новая категория</CardTitle>
+            <CardTitle className="text-2xl">Добавить товар</CardTitle>
             <CardDescription>
-              Укажите название и, если нужно, описание.
+              Заполните данные о товаре и добавьте его в систему.
             </CardDescription>
           </CardHeader>
+
           <CardContent>
-            <form onSubmit={handleCreate} className="space-y-4">
+            <form onSubmit={handleSubmit} noValidate className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="category-name">Название</Label>
+                <Label htmlFor="name">Название</Label>
                 <Input
-                  id="category-name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Например, Электроника"
+                  id="name"
+                  placeholder="Например, Ноутбук Lenovo"
+                  value={form.name}
+                  onChange={(e) => update("name", e.target.value)}
+        
+                  aria-invalid={!!errors.name}
+                />
+                {errors.name && (
+                  <p className="text-sm text-destructive">{errors.name}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Описание</Label>
+                <Textarea
+                  id="description"
+                  placeholder="Краткое описание товара"
+                  rows={4}
+                  value={form.description}
+                  onChange={(e) => update("description", e.target.value)}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="category-description">Описание</Label>
-                <Textarea
-                  id="category-description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Что входит в эту категорию (необязательно)"
-                  rows={3}
-                />
+                <Label htmlFor="category">Категория</Label>
+                <Select
+                  value={form.category}
+                  onValueChange={(value) => update("category", value)}
+                >
+                  <SelectTrigger
+                    id="category"
+                    className="w-full"
+                    aria-invalid={!!errors.category}
+                  >
+                    <SelectValue placeholder="Выберите категорию" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.category && (
+                  <p className="text-sm text-destructive">{errors.category}</p>
+                )}
               </div>
 
-              <Button type="submit">Создать категорию</Button>
+              <div className="space-y-2">
+                <Label htmlFor="cell">Номер ячейки на складе</Label>
+                <Input
+                  id="cell"
+                  placeholder="Например, A-12"
+                  value={form.cell}
+                  onChange={(e) => update("cell", e.target.value)}
+                  aria-invalid={!!errors.cell}
+                />
+                {errors.cell && (
+                  <p className="text-sm text-destructive">{errors.cell}</p>
+                )}
+              </div>
+
+              <Button type="submit" className="w-full">
+                Добавить товар
+              </Button>
             </form>
           </CardContent>
         </Card>
-
-        <h2 className="mt-10 text-xl font-semibold">
-          Все категории ({categories.length})
-        </h2>
-
-        {categories.length === 0 ? (
-          <p className="mt-4 text-muted-foreground">Категорий пока нет.</p>
-        ) : (
-          <ul className="mt-4 space-y-3">
-            {categories.map((category) => (
-              <li key={category.id}>
-                <Card>
-                  <CardHeader>
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="space-y-1.5">
-                        <CardTitle className="text-lg">
-                          {category.name}
-                        </CardTitle>
-                        <CardDescription>
-                          {category.description || "Без описания"}
-                        </CardDescription>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Card>
-              </li>
-            ))}
-          </ul>
-        )}
       </main>
     </div>
   )

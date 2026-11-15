@@ -8,6 +8,7 @@ import {
   PackageMinus,
   PackagePlus,
   User,
+  Users,
   SquareChartGantt,
 } from "lucide-react"
 
@@ -27,7 +28,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-// Разделы сайта. Поменяй пути (to) на свои маршруты.
 const sections = [
   {
     to: "/products",
@@ -41,12 +41,12 @@ const sections = [
     description: "Оформить поступление и внести новый товар в систему.",
     icon: PackagePlus,
   },
-  {
-    to: "/products/delete",
+    {
+    to: "/indevelopment",
     title: "Удалить товар",
-    description: "Убрать из системы товар, которого больше нет на складе.",
+    description: "Удалить ненужный товар из системы.",
     icon: PackageMinus,
-  },
+    }
 ]
 
 const adminSections = [
@@ -56,20 +56,25 @@ const adminSections = [
         description: "Все существующие категории, удаление и добавление новых.",
         icon: SquareChartGantt,
     },
+    {
+        to: "/indevelopment",
+        title: "Управление пользователями",
+        description: "Список всех пользователей, назначение и удаление админов.",
+        icon: Users,
+    }
 ]
 
 type HomeProps = {
-  /** Логин текущего пользователя */
   username?: string
-  /** Вызывается при выходе из аккаунта */
   onLogout?: () => void
 }
 
 export default function HomePage({ username, onLogout }: HomeProps) {
     const navigate = useNavigate()
+
     username = "Janpol"
     const userRole = "admin"
-  // Меню открывается при наведении на логин (и по клику — для тачскринов и клавиатуры)
+
     const [menuOpen, setMenuOpen] = useState(false)
     const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
         undefined
@@ -80,13 +85,11 @@ export default function HomePage({ username, onLogout }: HomeProps) {
         setMenuOpen(true)
     }
 
-  // Небольшая задержка, чтобы меню не закрывалось, пока курсор идёт от логина к пункту
     const closeMenu = () => {
         closeTimer.current = setTimeout(() => setMenuOpen(false), 150)
     }
 
     const handleLogout = () => {
-        // TODO: очистить токен / данные сессии
         onLogout?.()
         navigate("/login")
     }
