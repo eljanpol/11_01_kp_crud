@@ -1,5 +1,5 @@
 import jwt
-from fastapi import Depends, HTTPException, status, Header
+from fastapi import Depends, HTTPException, status, Header, Cookie
 from fastapi.security import OAuth2PasswordBearer
 
 from back.rest_api.jwt_token import decode_jwt, key
@@ -15,7 +15,7 @@ CREDS_ERROR = HTTPException(
 )
 
 
-def get_current_user(token: str | None= Header()) -> User:
+def get_current_user(token: str | None = Cookie(None)) -> User:
     if not token:
         raise CREDS_ERROR
 
@@ -28,7 +28,7 @@ def get_current_user(token: str | None= Header()) -> User:
 
     user = User.get_or_none(User.id == user_id)
 
-    if user is None:
+    if not user:
         raise CREDS_ERROR
 
     return user

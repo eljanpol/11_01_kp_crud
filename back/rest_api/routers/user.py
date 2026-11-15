@@ -33,7 +33,7 @@ def change_role(
     data: UserRoleUpdate,
     current_user=Depends(get_current_user)
     ):
-    
+
     if current_user.role.name == "admin":
         User.change_role(data)
 
