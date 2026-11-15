@@ -35,7 +35,7 @@ class Category(Table):
 
     @classmethod
     def create_category(cls, data: CategoryCreate):
-        category = cls.get_or_create(
+        category, _ = cls.get_or_create(
             name=data.name,
             description=data.description
         )
@@ -53,7 +53,7 @@ class Category(Table):
 
     @classmethod
     def get_category_list(cls):
-        return cls.select()
+        return list(cls.select())
 
 
 class User(Table):
@@ -113,8 +113,8 @@ class StorageCell(Table):
     name = CharField()
 
     @classmethod
-    def add_storage_sell(cls, sell: StorageCellCreate):
-        cell = cls.get_or_create(
+    def add_storage_cell(cls, sell: StorageCellCreate):
+        cell, is_created = cls.get_or_create(
             name=sell.name
         )
 
@@ -158,12 +158,12 @@ class Product(Table):
         if not category or not cell:
             raise NotFoundError(f"category or cell not found")
 
-        product = cls.get_or_create(
+        product, _ = cls.get_or_create(
             name=product.name,
             category=category,
             description=product.description,
             storage_cell=cell,
-            date_added=datetime.datetime.now
+            date_added=datetime.datetime.now()
         )
 
         return product
