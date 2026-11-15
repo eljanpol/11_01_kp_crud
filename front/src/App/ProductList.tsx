@@ -24,8 +24,8 @@ type Product = {
   id: number
   name: string
   description: string
-  category: string
-  storage_cell: string
+  category: {name: string}
+  storage_cell: {name: string}
   date_added: string
 }
 
@@ -41,44 +41,41 @@ const formatDate = (iso: string) =>
   })
 
 export default function ProductList() {
-  const [products, setProducts] = useState<Product[]>([])
+  const [products, setProducts] = useState<Product[] | null>(null)
   const [error, setError] = useState("")
+  const [selectedCategory, setCategory] = useState<string>(ALL)
+
+  const loadProducts = async () => {
+    const response = await fetch("http://localhost:8000/products/", { credentials: "include" })
+    const data = await response.json()
+    if (!response.ok) {
+      setError(data.detail)
+    }
+    else {
+      setProducts(data)
+    }
+  }
 
   useEffect(() => {
-    async function loadProducts() {
-      try {
-        const response = await fetch("http://localhost:8000/products/")
-
-        if (!response.ok) {
-          throw new Error("Ошибка сервера: " + response.status)
-        }
-
-        const data = await response.json()
-        setProducts(data)
-      } catch (err) {
-        console.error(err)
-        setError("Не удалось загрузить товары")
-      }
-    }
-
     loadProducts()
   }, [])
 
-  const categories = [...new Set(products.map((product) => product.category))]
   
-  const [category, setCategory] = useState<string>(ALL)
 
-  const visibleProducts = useMemo(() => {
-    const filtered =
-      category === ALL
-        ? products
-        : products.filter((product) => product.category === category)
+  if (!products) return null
 
-    return [...filtered].sort(
-      (a, b) =>
-        new Date(b.date_added).getTime() - new Date(a.date_added).getTime()
-    )
-  }, [products, category])
+  const categories = [...new Set(products.map(product => product.category.name as string))]
+
+  const filtered =
+    selectedCategory === ALL
+      ? products
+      : products.filter(product => product.category.name === selectedCategory)
+
+  const visibleProducts = [...filtered].sort(
+    (a, b) =>
+      new Date(b.date_added).getTime() - new Date(a.date_added).getTime()
+  )
+
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -102,7 +99,7 @@ export default function ProductList() {
 
           <div className="space-y-2 sm:w-56">
             <Label htmlFor="category-filter">Категория</Label>
-            <Select value={category} onValueChange={setCategory}>
+            <Select value={selectedCategory} onValueChange={setCategory}>
               <SelectTrigger id="category-filter" className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -131,18 +128,18 @@ export default function ProductList() {
                   <CardHeader>
                     <div className="flex items-start justify-between gap-4">
                       <CardTitle className="text-lg">{product.name}</CardTitle>
-                      <Badge variant="secondary">{product.category}</Badge>
+                      <Badge variant="secondary">{product.category.name}</Badge>
                     </div>
                     <CardDescription>{product.description}</CardDescription>
                   </CardHeader>
                   <CardContent className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
                     <span className="flex items-center gap-1.5">
                       <MapPin className="size-4" />
-                      Ячейка {product.storage_cell}
+                      Ячейка {product.storage_cell.name}
                     </span>
                     <span>Добавлен: {formatDate(product.date_added)}</span>
                     <Button variant="ghost" size="sm" asChild>
-                      <Link to="/providers">
+                      <Link to="/indevelopment">
                         О поставщике
                         <ArrowRight className="size-4" />
                       </Link>
