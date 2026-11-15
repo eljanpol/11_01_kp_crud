@@ -37,14 +37,6 @@ export default function AuthPage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    if (!username.trim() || !password) {
-      setError("Введите логин и пароль")
-      return
-    }
-    if (isRegister && password.length < 6) {
-      setError("Пароль должен быть не короче 6 символов")
-      return
-    }
     if (isRegister && password !== confirmPassword) {
       setError("Пароли не совпадают")
       return
@@ -53,34 +45,24 @@ export default function AuthPage() {
     setLoading(true)
     setError("")
 
-    try {
-      const response = await fetch("localhost:8000/${mode}", {
-        credentials: "include",
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: username.trim(), password }),
-      })
+    const response = await fetch(`http://localhost:8000/${mode}`, {
+      credentials: "include",
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: username.trim(), password }),
+    })
 
-      if (response.status === 401) {
-        setError("Неверный логин или пароль")
-        return
-      }
-      if (response.status === 409) {
-        setError("Пользователь с таким логином уже существует")
-        return
-      }
-      if (!response.ok) {
-        throw new Error("Ошибка сервера: " + response.status)
-      }
-
-      navigate("/home")
-    } catch (err) {
-      console.error(err)
-      setError("Не удалось выполнить запрос. Попробуйте позже")
-    } finally {
-      setLoading(false)
+    if (!response.ok) {
+      const err = await response.json() as { detail: string }
+      setError(err.detail)
+    } 
+    else {
+      navigate(mode === "login" ? "/home": "/login")
     }
+
+    setLoading(false)
   }
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 text-foreground">
